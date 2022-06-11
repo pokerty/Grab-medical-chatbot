@@ -1,61 +1,108 @@
-import random
-import json
+"""Entry point for example chatbot application using Infermedica API.
+Example:
+    To start the application simply type::
+        $ python3 chat.py APP_ID:APP_KEY
+    where `APP_ID` and `APP_KEY` are Application Id and Application Key from
+    your Infermedica account respectively.
+Note:
+    If you don't have an Infermedica account, please register at
+    https://developer.infermedica.com.
+"""
+import argparse
+import uuid
 
-import torch
+import conversation
+import apiaccess
 
-from model import NeuralNet
-from nltk_utils import bag_of_words, tokenize
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+def get_auth_string(auth_or_path):
+    """Retrieves authentication string from string or file.
+    Args:
+        auth_or_path (str): Authentication string or path to file containing it
+    Returns:
+        str: Authentication string.
+    """
+    if ":" in auth_or_path:
+        return auth_or_path
+    try:
+        with open(auth_or_path) as stream:
+            content = stream.read()
+            content = content.strip()
+            if ":" in content:
+                return content
+    except FileNotFoundError:
+        pass
+    raise ValueError(auth_or_path)
 
-with open('intents.json', 'r') as json_data:
-    intents = json.load(json_data)
 
-FILE = "data.pth"
-data = torch.load(FILE)
+def new_case_id():
+    """Generates an identifier unique to a new session.
+    Returns:
+        str: Unique identifier in hexadecimal form.
+    Note:
+        This is not user id but an identifier that is generated anew with each
+        started "visit" to the bot.
+    """
+    return uuid.uuid4().hex
 
-input_size = data["input_size"]
-hidden_size = data["hidden_size"]
-output_size = data["output_size"]
-all_words = data['all_words']
-tags = data['tags']
-model_state = data["model_state"]
 
-model = NeuralNet(input_size, hidden_size, output_size).to(device)
-model.load_state_dict(model_state)
-model.eval()
+def parse_args():
+    """Parses command line arguments.
+    Returns:
+        argparse.Namespace: Namespace containing three public attributes:
+            1. auth (str) - authentication credentials.
+            2. model (str) - chosen language model.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("auth",
+                        help="authentication string for Infermedica API: "
+                             "APP_ID:APP_KEY or path to file containing it.")
+    parser.add_argument("--model",
+                        help="use non-standard Infermedica model/language, "
+                             "e.g. infermedica-es")
+    args = parser.parse_args()
+    return args
 
-bot_name = "Sam"
 
-def get_response(msg):
-    sentence = tokenize(msg)
-    X = bag_of_words(sentence, all_words)
-    X = X.reshape(1, X.shape[0])
-    X = torch.from_numpy(X).to(device)
+def run():
+    """Runs the main application."""
+    args = parse_args()
+    auth_string = get_auth_string(args.auth)
+    case_id = new_case_id()
 
-    output = model(X)
-    _, predicted = torch.max(output, dim=1)
+    # Read patient's age and sex; required by /diagnosis endpoint.
+    # Alternatively, this could be done after learning patient's complaints
+    age, sex = conversation.read_age_sex()
+    print(f"Ok, {age} year old {sex}.")
+    age = {'value':  age, 'unit': 'year'}
 
-    tag = tags[predicted.item()]
+    # Query for all observation names and store them. In a real chatbot, this
+    # could be done once at initialisation and used for handling all events by
+    # one worker. This is an id2name mapping.
+    naming = apiaccess.get_observation_names(age, auth_string, case_id, args.model)
 
-    probs = torch.softmax(output, dim=1)
-    prob = probs[0][predicted.item()]
-    if prob.item() > 0.75:
-        for intent in intents['intents']:
-            if tag == intent["tag"]:
-                return random.choice(intent['responses'])
-    
-    return "I do not understand..."
+    # Read patient's complaints by using /parse endpoint.
+    mentions = conversation.read_complaints(age, sex, auth_string, case_id, args.model)
+
+    # Keep asking diagnostic questions until stop condition is met (all of this
+    # by calling /diagnosis endpoint) and get the diagnostic ranking and triage
+    # (the latter from /triage endpoint).
+    evidence = apiaccess.mentions_to_evidence(mentions)
+    evidence, diagnoses, triage = conversation.conduct_interview(evidence, age,
+                                                                 sex, case_id,
+                                                                 auth_string,
+                                                                 args.model)
+
+    # Add `name` field to each piece of evidence to get a human-readable
+    # summary.
+    apiaccess.name_evidence(evidence, naming)
+
+    # Print out all that we've learnt about the case and finish.
+    print()
+    conversation.summarise_all_evidence(evidence)
+    conversation.summarise_diagnoses(diagnoses)
+    conversation.summarise_triage(triage)
 
 
 if __name__ == "__main__":
-    print("Let's chat! (type 'quit' to exit)")
-    while True:
-        # sentence = "do you use credit cards?"
-        sentence = input("You: ")
-        if sentence == "quit":
-            break
-
-        resp = get_response(sentence)
-        print(resp)
-
+    run()
