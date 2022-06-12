@@ -20,8 +20,19 @@ def run():
         print(id)
         #evidence is to be like the one in readme.md
         evidence = conversation.mentions_to_evidence(id)
+        info = {
+            "sex": sex,
+            "age": age,
+            "evidence": evidence,
+            "extras": {
+                'disable_groups': True
+            }
+        }
+
         print("\n\n", evidence)
-        response = api.suggest(**evidence)
+        response = api.triage(**info)
+        print("\n\n", response)
+        response = api.suggest(**info)
         print("\n\n", response)
 
 
