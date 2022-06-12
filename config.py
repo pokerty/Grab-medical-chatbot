@@ -18,8 +18,8 @@ def setup_examples():
         import infermedica_api
 
     # !!! SET YOUR CREDENTIALS AS ENVIRONMENTAL VARIABLES "APP_ID" & "APP_KEY" OR SET THEM HERE !!!
-    app_id = os.getenv("APP_ID", "7c683f61")
-    app_key = os.getenv("APP_KEY", "26cf180dd690889a9eb3cafbd6ddec36")
+    app_id = os.getenv("APP_ID", "YOUR_APP_ID")
+    app_key = os.getenv("APP_KEY", "YOUR_APP_KEY")
 
     # Prepare API v3 connector as default one
     infermedica_api.configure(
