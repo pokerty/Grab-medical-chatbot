@@ -104,3 +104,10 @@ def extract_keywords(text, keywords):
                         for keyword in keywords)
     mentions_regex = re.compile(pattern, flags=re.I)
     return mentions_regex.findall(text)
+
+def mentions_to_evidence(mentions):
+    """Convert mentions (from /parse endpoint) to evidence structure as
+    expected by the /diagnosis endpoint.
+    """
+    return [{'id': m['id'], 'choice_id': m['choice_id'], 'source': 'initial'}
+            for m in mentions]
