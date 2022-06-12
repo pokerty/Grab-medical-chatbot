@@ -1,6 +1,7 @@
-class Chatbox{
+class Chatbox {
     constructor() {
         this.args = {
+            startButton: document.querySelector('.startbutton'),
             openButton: document.querySelector('.chatbox__button'),
             chatBox: document.querySelector('.chatbox__support'),
             sendButton: document.querySelector('.send__button')
@@ -11,7 +12,9 @@ class Chatbox{
     }
 
     display() {
-        const {openButton, chatBox, sendButton} = this.args;
+        const {openButton, chatBox, sendButton, startButton} = this.args;
+
+        startButton.addEventListener('click', () => this.toggleState(chatBox))
 
         openButton.addEventListener('click', () => this.toggleState(chatBox))
 
@@ -35,6 +38,7 @@ class Chatbox{
             chatbox.classList.remove('chatbox--active')
         }
     }
+
     onSendButton(chatbox) {
         var textField = chatbox.querySelector('input');
         let text1 = textField.value
@@ -45,8 +49,7 @@ class Chatbox{
         let msg1 = { name: "User", message: text1 }
         this.messages.push(msg1);
 
-        //'http://127.0.0.1:5000/predict'
-        fetch($SCRIPT_ROOT + '/predict', {
+        fetch('http://127.0.0.1:5000/predict', {
             method: 'POST',
             body: JSON.stringify({ message: text1 }),
             mode: 'cors',
@@ -84,9 +87,8 @@ class Chatbox{
         const chatmessage = chatbox.querySelector('.chatbox__messages');
         chatmessage.innerHTML = html;
     }
-
-
 }
+
 
 const chatbox = new Chatbox();
 chatbox.display();
