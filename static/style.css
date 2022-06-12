@@ -186,3 +186,46 @@ body {
     width: 40%;
     margin-right: 50px;
 }
+
+#features {
+    padding-left: 500px;
+    padding-right: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#features .feature-container {
+    width: 300px;
+    text-align: center;
+    padding: 25px 15px;
+    box-shadow: 20px 20px 34px rgba(0,0,0,0.03);
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+#features .feature-container:hover {
+    box-shadow: 10px 10px 54px rgba(70,62,221,0.1);
+}
+
+#features .feature-container h6 {
+    padding-top: 20px;
+    font-size: 20px;
+}
+
+#about {
+
+    padding-top: 20px;
+    text-align: center;
+    width: 1280px;
+    padding-left: 640px;
+}
+
+#footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: #E3E6F3;
+    text-align: center;
+}
