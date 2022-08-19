@@ -2,6 +2,10 @@
 
 This git contains 2 versions of the chatbot, both using the infermedica api. One is a command line one with accurate responses. The other is a web app created with Flask with a beautiful interface.
 
+## Demo
+
+https://youtu.be/tpHNhktHhRE
+
 ## Installation
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Flask. Then upgrade it to version 2.0 and above.
